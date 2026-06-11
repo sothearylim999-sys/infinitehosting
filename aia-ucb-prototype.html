@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AIA × UCB Credit Card — Installment Journey Prototype</title>
+<style>
+  :root {
+    --aia: #c8102e;          /* AIA red — existing journey */
+    --aia-soft: #fdecee;
+    --ucb: #0f3d8c;          /* UCB blue — new installment layer */
+    --ucb-soft: #eaf1fb;
+    --ink: #16202e;
+    --ink-soft: #5a6675;
+    --line: #e4e8ee;
+    --bg: #eef1f6;
+    --card: #ffffff;
+    --ok: #0f7b54;
+    --ok-soft: #e7f6ef;
+    --warn: #b25e09;
+    --warn-soft: #fdf3e7;
+    --radius: 16px;
+    --shadow: 0 10px 30px rgba(20, 33, 51, 0.08);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ---------- prototype context bar ---------- */
+  .protobar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: #16202e; color: #cdd6e4;
+    padding: 12px 18px; border-radius: 12px; font-size: 13px;
+    margin-bottom: 22px;
+  }
+  .protobar strong { color: #fff; }
+  .pill {
+    font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 999px;
+  }
+  .pill-aia { background: var(--aia); color: #fff; }
+  .pill-ucb { background: var(--ucb); color: #fff; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    background:
+      radial-gradient(120% 120% at 0% 0%, rgba(200,16,46,.10), transparent 45%),
+      radial-gradient(120% 120% at 100% 0%, rgba(15,61,140,.14), transparent 45%),
+      var(--card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 34px 32px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  .hero .eyebrow {
+    font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 12px; display: flex; gap: 8px; align-items: center;
+  }
+  .hero h1 { font-size: clamp(24px, 3.4vw, 34px); line-height: 1.15; letter-spacing: -.02em; }
+  .hero p { color: var(--ink-soft); max-width: 760px; margin-top: 12px; font-size: 15px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 20px; }
+  .legend span { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+  .dot { width: 12px; height: 12px; border-radius: 4px; }
+  .dot-aia { background: var(--aia); }
+  .dot-ucb { background: var(--ucb); }
+
+  /* ---------- layout ---------- */
+  .grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 22px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 22px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 19px; letter-spacing: -.01em; margin-bottom: 6px; }
+  .card .sub { color: var(--ink-soft); font-size: 14px; margin-bottom: 16px; }
+  .owner-tag {
+    font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 6px; margin-bottom: 14px; display: inline-block;
+  }
+  .owner-aia { background: var(--aia-soft); color: var(--aia); }
+  .owner-ucb { background: var(--ucb-soft); color: var(--ucb); }
+
+  /* ---------- payment method tiles ---------- */
+  .methods { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .method {
+    text-align: left; cursor: pointer; background: #fff;
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .method:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: #cfd6e0; }
+  .method .name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .method .desc { font-size: 12.5px; color: var(--ink-soft); }
+  .method .tag { display: inline-block; margin-top: 10px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: #eef1f6; color: var(--ink-soft); }
+
+  .method-ucb {
+    grid-column: span 2;
+    border: 1.5px solid var(--ucb);
+    background: linear-gradient(180deg, #fff, var(--ucb-soft));
+  }
+  .method-ucb:hover { border-color: var(--ucb); }
+  .ucb-badge { display: inline-block; background: var(--ucb); color: #fff; font-weight: 800; font-size: 12px; letter-spacing: .06em; padding: 4px 9px; border-radius: 7px; margin-right: 8px; }
+
+  /* ---------- journey list ---------- */
+  .steps { display: flex; flex-direction: column; gap: 10px; }
+  .step { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border: 1px solid var(--line); border-radius: 13px; }
+  .step.ucb { background: var(--ucb-soft); border-color: #d3e0f5; }
+  .step.aia { background: var(--aia-soft); border-color: #f6d8dd; }
+  .step .n {
+    flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: #fff;
+  }
+  .step.ucb .n { background: var(--ucb); }
+  .step.aia .n { background: var(--aia); }
+  .step .t { font-weight: 700; font-size: 14px; }
+  .step .d { font-size: 13px; color: var(--ink-soft); }
+
+  /* ---------- flow chips ---------- */
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font-size: 12.5px; font-weight: 700; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; }
+  .chip.aia { color: var(--aia); border-color: #f0c3ca; background: var(--aia-soft); }
+  .chip.ucb { color: var(--ucb); border-color: #c4d6f3; background: var(--ucb-soft); }
+  .flow .arr { color: #b6bfca; font-weight: 800; }
+
+  /* ---------- notes ---------- */
+  .note { font-size: 13px; line-height: 1.5; border-radius: 12px; padding: 13px 15px; margin-top: 14px; }
+  .note-ok { background: var(--ok-soft); color: var(--ok); border-left: 4px solid var(--ok); }
+  .note-warn { background: var(--warn-soft); color: var(--warn); border-left: 4px solid var(--warn); }
+  .note-ucb { background: var(--ucb-soft); color: var(--ucb); border-left: 4px solid var(--ucb); }
+
+  /* ---------- rate source (loaded from Excel) ---------- */
+  .ratehead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .filedrop {
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px;
+    margin-top: 14px; padding: 20px 16px; cursor: pointer;
+    border: 1.5px dashed #bcc8dc; border-radius: 14px; background: #f8faff;
+    transition: border-color .18s ease, background .18s ease;
+  }
+  .filedrop:hover { border-color: var(--ucb); background: var(--ucb-soft); }
+  .filedrop-icon {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--ucb); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; margin-bottom: 4px;
+  }
+  .filedrop-main { font-weight: 700; font-size: 14.5px; color: var(--ucb); }
+  .filedrop-sub { font-size: 12px; color: var(--ink-soft); }
+  .loaded { margin-top: 10px; font-size: 12.5px; color: var(--ink-soft); display: flex; align-items: center; gap: 7px; }
+  .loaded .ok { color: var(--ok); font-weight: 700; }
+
+  table.tbl { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  table.tbl th, table.tbl td { text-align: left; font-size: 13.5px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  table.tbl th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); }
+
+  /* ---------- modals ---------- */
+  .overlay {
+    display: none; position: fixed; inset: 0; z-index: 80;
+    background: rgba(13, 20, 31, .55); backdrop-filter: blur(2px);
+    align-items: center; justify-content: center; padding: 18px;
+  }
+  .modal {
+    background: #fff; width: 100%; max-width: 760px; max-height: 92vh; overflow-y: auto;
+    border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.3);
+    animation: pop .18s ease;
+  }
+  @keyframes pop { from { transform: translateY(8px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal-head { padding: 22px 26px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start; }
+  .modal-head .badge { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: 4px 8px; border-radius: 6px; }
+  .modal-body { padding: 22px 26px; }
+  .modal h3 { font-size: 20px; letter-spacing: -.01em; }
+  .modal .lead { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .choice { border: 1px solid var(--line); border-radius: 14px; padding: 18px; cursor: pointer; transition: .18s; }
+  .choice:hover { border-color: var(--ucb); background: var(--ucb-soft); transform: translateY(-2px); }
+  .choice strong { display: block; font-size: 16px; margin-bottom: 6px; }
+  .choice p { font-size: 13px; color: var(--ink-soft); }
+
+  /* ---------- calculator ---------- */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 700; color: #36404e; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 11px 12px;
+    font-size: 14px; font-family: var(--font); color: var(--ink); background: #fff;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--ucb); box-shadow: 0 0 0 3px rgba(15,61,140,.12); }
+  .field input[readonly] { background: #f4f6fa; color: var(--ink-soft); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .tenures { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .tcard {
+    display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+    background: #fff; border: 1.5px solid var(--line); border-radius: 15px;
+    padding: 15px 16px; cursor: pointer; font-family: var(--font);
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease;
+  }
+  .tcard:hover { transform: translateY(-2px); border-color: #c4d6f3; box-shadow: 0 10px 22px rgba(15,61,140,.10); }
+  .tcard.on {
+    border-color: var(--ucb);
+    background: linear-gradient(180deg, #ffffff, var(--ucb-soft));
+    box-shadow: 0 0 0 3px rgba(15,61,140,.14), 0 10px 22px rgba(15,61,140,.10);
+  }
+  .tcard.off { opacity: .5; cursor: not-allowed; }
+  .tcard.off:hover { transform: none; box-shadow: none; border-color: var(--line); }
+
+  .radio { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #cbd3df; position: relative; transition: .18s ease; }
+  .tcard.on .radio { border-color: var(--ucb); background: var(--ucb); }
+  .tcard.on .radio::after { content: ""; position: absolute; left: 6px; top: 2px; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+
+  .tmain { flex: 1 1 auto; min-width: 0; }
+  .ttenure { font-weight: 800; font-size: 16.5px; letter-spacing: -.01em; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tmeta { font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
+  .tbadge { font-size: 10px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); white-space: nowrap; }
+  .tbadge.min { background: var(--warn-soft); color: var(--warn); text-transform: none; letter-spacing: 0; }
+
+  .tright { flex: 0 0 auto; text-align: right; padding-left: 6px; }
+  .tmonthly { font-weight: 800; font-size: 19px; letter-spacing: -.01em; color: var(--ink); line-height: 1.05; }
+  .tcard.on .tmonthly { color: var(--ucb); }
+  .tmlabel { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .calc-hint { font-size: 13px; font-weight: 600; color: var(--warn); background: var(--warn-soft); border-radius: 10px; padding: 9px 12px; margin-top: 12px; }
+  .tenures.flash { animation: flashring .9s ease; border-radius: 15px; }
+  @keyframes flashring { 0%,100% { box-shadow: 0 0 0 0 rgba(178,94,9,0); } 30% { box-shadow: 0 0 0 3px rgba(178,94,9,.35); } }
+
+  .summary { background: #f8faff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 16px; }
+  .sumrow { display: flex; justify-content: space-between; gap: 14px; padding: 7px 0; font-size: 13.5px; border-bottom: 1px dashed var(--line); }
+  .sumrow:last-child { border-bottom: none; }
+  .sumrow strong { text-align: right; }
+  .sumrow.total { font-size: 15px; margin-top: 4px; padding-top: 11px; border-top: 1px solid var(--line); }
+  .sumrow.total strong { color: var(--ucb); }
+
+  /* ---------- buttons ---------- */
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+  .btn { border: none; cursor: pointer; font-weight: 700; font-size: 14px; padding: 12px 18px; border-radius: 999px; font-family: var(--font); transition: filter .15s, transform .15s; }
+  .btn:hover:not(:disabled) { filter: brightness(.96); transform: translateY(-1px); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-ucb { background: var(--ucb); color: #fff; }
+  .btn-aia { background: var(--aia); color: #fff; }
+  .btn-ghost { background: #eef1f6; color: #36404e; }
+  .btn-block { width: 100%; }
+
+  .channel {
+    border: 1px dashed var(--ucb); background: var(--ucb-soft);
+    border-radius: 14px; padding: 16px; margin: 16px 0;
+  }
+  .channel .ch-title { font-weight: 800; color: var(--ucb); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .channel p { font-size: 13px; color: #2c3a55; }
+  .ch-mode { font-size: 10.5px; font-weight: 800; letter-spacing: .03em; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); text-transform: none; }
+  .ch-mode.live { background: var(--ok-soft); color: var(--ok); }
+  .submit-status { font-size: 13px; margin: 4px 0 0; min-height: 18px; color: var(--ink-soft); display: flex; align-items: center; gap: 8px; }
+  .submit-status.err { color: var(--aia); }
+  .submit-status.ok { color: var(--ok); }
+  .spin { width: 14px; height: 14px; border: 2px solid #c7d2e4; border-top-color: var(--ucb); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none; }
+
+  /* ---------- data methods cards ---------- */
+  .methods-list { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .mcard { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
+  .mcard h4 { font-size: 14.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .mcard .lvl { font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+  .lvl-now { background: var(--ok-soft); color: var(--ok); }
+  .lvl-next { background: var(--ucb-soft); color: var(--ucb); }
+  .mcard p { font-size: 12.5px; color: var(--ink-soft); }
+
+  .footer { text-align: center; color: var(--ink-soft); font-size: 12.5px; margin-top: 32px; line-height: 1.7; }
+
+  @media (max-width: 880px) {
+    .grid, .methods, .choices, .row2, .methods-list { grid-template-columns: 1fr; }
+    .method-ucb { grid-column: span 1; }
+    .tcard { padding: 13px 14px; gap: 11px; }
+    .tmonthly { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- context -->
+  <div class="protobar">
+    <span class="pill pill-aia">AIA</span>
+    <span class="pill pill-ucb">UCB</span>
+    <strong>Prototype only.</strong>
+    <span>No real payment is processed and no real customer data is transmitted. For partnership discussion.</span>
+  </div>
+
+  <!-- hero -->
+  <div class="hero">
+    <div class="eyebrow">Partnership prototype · Credit card payment &amp; installment</div>
+    <h1>AIA × UCB Credit Card — Premium Payment &amp; Installment Journey</h1>
+    <p>
+      Customers pay an AIA premium and may choose to pay directly by UCB Credit Card or apply for a UCB
+      installment plan. The existing AIA payment gateway still processes the money. UCB adds the installment
+      selection, calculator, request capture, and post-payment setup — captured through a UCB-controlled channel
+      so AIA does not need to forward customer data manually.
+    </p>
+    <div class="legend">
+      <span><i class="dot dot-aia"></i> AIA — existing journey &amp; gateway</span>
+      <span><i class="dot dot-ucb"></i> UCB — new installment layer</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <div class="col">
+
+      <!-- payment page -->
+      <div class="card">
+        <span class="owner-tag owner-aia">AIA premium payment page</span>
+        <h2>Choose a payment method</h2>
+        <p class="sub">The UCB Credit Card tile opens two paths: pay directly, or apply for an installment plan.</p>
+
+        <div class="methods">
+          <button class="method" onclick="pickExisting('KHQR')">
+            <div class="name">KHQR</div>
+            <div class="desc">Scan and pay instantly through a supported mobile banking app.</div>
+            <span class="tag">Existing</span>
+          </button>
+          <button class="method" onclick="pickExisting('Visa / Mastercard / JCB')">
+            <div class="name">Visa / Mastercard / JCB</div>
+            <div class="desc">Standard online card payment through the existing gateway.</div>
+            <span class="tag">Existing gateway</span>
+          </button>
+          <button class="method" onclick="pickExisting('Direct Debit')">
+            <div class="name">Bank account / Direct debit</div>
+            <div class="desc">Set up account deduction for renewal premium, where supported.</div>
+            <span class="tag">Renewal</span>
+          </button>
+          <button class="method" onclick="pickExisting('Mobile Banking / OTC')">
+            <div class="name">Mobile banking / OTC</div>
+            <div class="desc">Pay by supported mobile banking channel or over-the-counter.</div>
+            <span class="tag">Existing</span>
+          </button>
+
+          <button class="method method-ucb" onclick="openUcb()">
+            <div class="name"><span class="ucb-badge">UCB</span>Credit Card</div>
+            <div class="desc">Pay directly by UCB Credit Card, or apply for a UCB Credit Card installment plan.</div>
+            <span class="tag" style="background:var(--ucb);color:#fff;">Direct payment / Installment</span>
+          </button>
+        </div>
+
+        <div class="note note-warn">
+          Prototype note — this page demonstrates the journey only. It does not take real payments or send real data.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col">
+
+      <!-- flow -->
+      <div class="card">
+        <h2>High-level flow</h2>
+        <p class="sub">Two parties, one continuous experience for the customer.</p>
+        <div class="flow">
+          <span class="chip aia">AIA payment page</span><span class="arr">→</span>
+          <span class="chip ucb">UCB Credit Card</span><span class="arr">→</span>
+          <span class="chip ucb">Direct / Installment</span><span class="arr">→</span>
+          <span class="chip ucb">Tenure table</span><span class="arr">→</span>
+          <span class="chip ucb">Request form</span><span class="arr">→</span>
+          <span class="chip aia">Gateway payment</span><span class="arr">→</span>
+          <span class="chip ucb">Confirmed to UCB</span>
+        </div>
+        <div class="note note-ok">
+          Recommended control — capture only the card's last 4 digits or a masked reference. Never collect CVV or
+          the full card number in this form. The real card number is handled only inside the certified gateway.
+        </div>
+      </div>
+
+      <!-- rate source loaded from Excel -->
+      <div class="card">
+        <span class="owner-tag owner-ucb">UCB-maintained rate source</span>
+        <div class="ratehead">
+          <div>
+            <h2>Tenure &amp; interest table</h2>
+            <p class="sub" style="margin-bottom:0;">Rates live in a UCB-maintained Excel file. Load the latest to refresh the calculator — no website code change.</p>
+          </div>
+        </div>
+
+        <label class="filedrop" for="rateFile">
+          <span class="filedrop-icon">&#8682;</span>
+          <span class="filedrop-main">Load rate file</span>
+          <span class="filedrop-sub">Excel (.xlsx) or CSV — UCB updates the file, the page just reads it</span>
+          <input type="file" id="rateFile" accept=".xlsx,.csv" onchange="loadRateFile(event)" hidden />
+        </label>
+        <div class="loaded" id="loadedInfo">Showing built-in sample rates.</div>
+
+        <table class="tbl" id="ratePreview"></table>
+
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn btn-ghost" onclick="resetRates()">Reset to sample</button>
+        </div>
+
+        <div class="note note-warn">
+          Expected columns: <code>Tenure (months) &middot; Annual Rate (%) &middot; Minimum Amount (USD)</code>.
+          Rates shown are placeholders — final values confirmed by UCB card operations.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Prepared for partnership discussion only. Not a live system.<br>
+    Final production design to be reviewed by UCB IT, card operations, compliance, security, and AIA's payment team.
+  </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- UCB choice -->
+<div class="overlay" id="m_choice">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="badge owner-ucb">UCB</span>
+      <div><h3>UCB Credit Card</h3><div class="lead">How would you like to pay?</div></div>
+    </div>
+    <div class="modal-body">
+      <div class="choices">
+        <div class="choice" onclick="openDirect()">
+          <strong>Pay directly</strong>
+          <p>Continue to the existing gateway and pay the full amount by UCB Credit Card.</p>
+          <span class="tag" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--ok-soft);color:var(--ok);">Normal card payment</span>
+        </div>
+        <div class="choice" onclick="openCalc()">
+          <strong>Apply for installment</strong>
+          <p>Pick a tenure, review the monthly repayment, fill in the request, then pay.</p>
+          <span class="tag" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--ucb-soft);color:var(--ucb);">Installment plan</span>
+        </div>
+      </div>
+      <div class="actions"><button class="btn btn-ghost" onclick="closeAll()">Close</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- direct -->
+<div class="overlay" id="m_direct">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="badge owner-aia">AIA gateway</span>
+      <div><h3>Pay directly by UCB Credit Card</h3><div class="lead">You'll be taken to the existing payment gateway.</div></div>
+    </div>
+    <div class="modal-body">
+      <div class="note note-ok">Normal card payment only — no installment request is submitted.</div>
+      <div class="actions">
+        <button class="btn btn-aia" onclick="openGateway('direct')">Proceed to payment gateway</button>
+        <button class="btn btn-ghost" onclick="openUcb()">Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- calculator -->
+<div class="overlay" id="m_calc">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="badge owner-ucb">UCB</span>
+      <div><h3>Installment calculator</h3><div class="lead">Enter the amount, then choose a tenure from the table.</div></div>
+    </div>
+    <div class="modal-body">
+      <div class="row2">
+        <div class="field">
+          <label for="amount">Premium / transaction amount (USD)</label>
+          <input type="number" id="amount" value="1200" min="1" oninput="renderTenure()" />
+        </div>
+        <div class="field">
+          <label>Selected tenure</label>
+          <input type="text" id="selDisplay" value="Select from the table below" readonly />
+        </div>
+      </div>
+
+      <div class="tenures" id="tenureBody"></div>
+
+      <div class="summary">
+        <div class="sumrow"><span>Principal</span><strong id="r_principal">USD 1,200.00</strong></div>
+        <div class="sumrow"><span>Tenure</span><strong id="r_tenure">Not selected</strong></div>
+        <div class="sumrow"><span>Interest rate</span><strong id="r_rate">—</strong></div>
+        <div class="sumrow"><span>Total interest</span><strong id="r_interest">USD 0.00</strong></div>
+        <div class="sumrow"><span>Estimated monthly repayment</span><strong id="r_monthly">Select a tenure</strong></div>
+        <div class="sumrow total"><span>Total payable</span><strong id="r_total">USD 1,200.00</strong></div>
+      </div>
+
+      <div class="note note-warn">Reference calculation only. Final installment setup is subject to UCB confirmation and approval.</div>
+
+      <div class="calc-hint hidden" id="calcHint">Tap a tenure in the table above, then continue.</div>
+
+      <div class="actions">
+        <button class="btn btn-ucb" id="toFormBtn" onclick="openForm()">Continue to installment request</button>
+        <button class="btn btn-ghost" onclick="openUcb()">Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- request form -->
+<div class="overlay" id="m_form">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="badge owner-ucb">UCB form</span>
+      <div><h3>Installment request details</h3><div class="lead">Complete the request before continuing to payment.</div></div>
+    </div>
+    <div class="modal-body">
+      <div class="channel">
+        <div class="ch-title">UCB-controlled channel <span class="ch-mode" id="chMode">Demo mode</span></div>
+        <p id="chDesc">When a UCB endpoint is configured, this form posts <strong>directly to UCB</strong> on submit
+          (Power Automate / Microsoft Form / API) — AIA does not relay it. No endpoint is set, so it runs in demo mode.</p>
+      </div>
+
+      <form id="reqForm" onsubmit="submitForm(event)">
+        <div class="row2">
+          <div class="field"><label for="f_name">Customer name *</label><input id="f_name" required placeholder="Full name" /></div>
+          <div class="field"><label for="f_phone">Phone number *</label><input id="f_phone" required placeholder="0xx xxx xxx" /></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="f_policy">AIA policy / payment reference *</label><input id="f_policy" required placeholder="AIA-2026-00001" /></div>
+          <div class="field"><label for="f_last4">UCB card last 4 digits *</label><input id="f_last4" required maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="1234" /></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Selected tenure</label><input id="f_tenure" readonly /></div>
+          <div class="field"><label>Payment period</label><input id="f_period" readonly /></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Transaction amount</label><input id="f_amount" readonly /></div>
+          <div class="field"><label>Estimated monthly repayment</label><input id="f_monthly" readonly /></div>
+        </div>
+
+        <div class="note note-warn">Do not enter CVV or the full card number here. The card itself is entered only inside the certified gateway.</div>
+
+        <div class="submit-status" id="submitStatus"></div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-aia" id="submitBtn">Submit to UCB &amp; continue to payment</button>
+          <button type="button" class="btn btn-ghost" onclick="openCalc()">Back to tenure table</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- gateway -->
+<div class="overlay" id="m_gateway">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="badge owner-aia">AIA gateway</span>
+      <div><h3>Existing payment gateway</h3><div class="lead">Represents AIA's certified online payment gateway.</div></div>
+    </div>
+    <div class="modal-body">
+      <div id="g_direct" class="note note-ok">Direct payment — the customer pays the full amount by UCB Credit Card.</div>
+      <div id="g_inst" class="note note-ucb hidden">Installment request captured. After a successful payment, the request is confirmed to UCB.</div>
+      <div class="actions">
+        <button class="btn btn-aia" onclick="completePayment()">Pay now</button>
+        <button class="btn btn-ghost" onclick="closeAll()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- success -->
+<div class="overlay" id="m_done">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="badge owner-ucb" style="background:var(--ok-soft);color:var(--ok);">Success</span>
+      <div><h3>Payment successful</h3><div class="lead">Your payment has been completed.</div></div>
+    </div>
+    <div class="modal-body">
+      <div class="note note-ok" id="doneSummary"></div>
+      <div class="note note-ucb">For installment, the request is now submitted to UCB for review and setup. Final arrangement is subject to UCB confirmation.</div>
+      <div class="actions"><button class="btn btn-ucb" onclick="closeAll()">Done</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  // ===================================================================
+  //  UCB SUBMISSION ENDPOINT  —  set this to go live
+  //  Paste the URL from a UCB-owned Power Automate
+  //  "When an HTTP request is received" trigger (or any UCB endpoint
+  //  that accepts a JSON POST). Leave "" to stay in demo mode.
+  // ===================================================================
+  const UCB_SUBMIT_URL = "";
+  // ===================================================================
+
+  const DEFAULT_RATES = [
+    { tenure: 3, rate: 0.00, min: 100 },
+    { tenure: 6, rate: 0.06, min: 100 },
+    { tenure: 12, rate: 0.09, min: 300 }
+  ];
+  let rates = [];
+  let selected = null;
+  let journey = "";
+  let formData = {};
+
+  // Accepts rows of [tenure, rate%, min]; keeps only rows whose first cell is a number,
+  // so titles / headers / notes in the file are ignored automatically.
+  function rowsToRates(rows) {
+    return rows
+      .map(r => [Number(r[0]), Number(r[1]), Number(r[2] || 0)])
+      .filter(r => Number.isFinite(r[0]) && r[0] > 0 && Number.isFinite(r[1]))
+      .map(([tenure, ratePct, min]) => ({ tenure, rate: ratePct / 100, min: Number.isFinite(min) ? min : 0 }));
+  }
+
+  function applyRates(parsed, sourceLabel) {
+    if (!parsed.length) { alert("No valid rate rows found. Expected columns: Tenure, Annual Rate (%), Minimum Amount."); return; }
+    rates = parsed.sort((a, b) => a.tenure - b.tenure);
+    selected = null;
+    document.getElementById("loadedInfo").innerHTML = sourceLabel;
+    renderRatePreview();
+    renderTenure();
+  }
+
+  function loadRateFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    const isCsv = /\.csv$/i.test(file.name);
+
+    reader.onload = ev => {
+      try {
+        let rows;
+        if (isCsv) {
+          rows = ev.target.result.trim().split(/\r?\n/).map(l => l.split(","));
+        } else {
+          if (typeof XLSX === "undefined") {
+            alert("Excel reader isn't available offline. Save the file as CSV and load that, or open this page online.");
+            return;
+          }
+          const wb = XLSX.read(new Uint8Array(ev.target.result), { type: "array" });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        }
+          const parsed = rowsToRates(rows);
+          applyRates(parsed,
+            `<span class="ok">&#10003; Loaded</span> ${parsed.length} tenure${parsed.length === 1 ? "" : "s"} from <strong>${file.name}</strong>`);
+      } catch (err) {
+        alert("Could not read that file. Please use the UCB rate Excel or a CSV with the same columns.");
+      }
+    };
+    isCsv ? reader.readAsText(file) : reader.readAsArrayBuffer(file);
+  }
+
+  function resetRates() {
+    const input = document.getElementById("rateFile");
+    if (input) input.value = "";
+    applyRates(DEFAULT_RATES.map(r => ({ ...r })), "Showing built-in sample rates.");
+  }
+
+  function renderRatePreview() {
+    const t = document.getElementById("ratePreview");
+    t.innerHTML = "<tr><th>Tenure</th><th>Annual rate</th><th>Min amount</th></tr>" +
+      rates.map(r => `<tr><td>${r.tenure} months</td><td>${(r.rate*100).toFixed(2)}%</td><td>${usd(r.min)}</td></tr>`).join("");
+  }
+
+  // ----- calculation (flat reference model; replace with UCB formula) -----
+  function calc(amount, r) {
+    const totalInterest = amount * r.rate;
+    const totalPayable = amount + totalInterest;
+    const monthly = r.tenure > 0 ? totalPayable / r.tenure : 0;
+    return { totalInterest, totalPayable, monthly };
+  }
+
+  function renderTenure() {
+    const amount = Number(document.getElementById("amount").value || 0);
+    const body = document.getElementById("tenureBody");
+    body.innerHTML = "";
+    rates.forEach(r => {
+      const c = calc(amount, r);
+      const on = selected && selected.tenure === r.tenure;
+      const below = amount < r.min;
+      const zero = r.rate === 0;
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "tcard" + (on ? " on" : "") + (below ? " off" : "");
+      card.onclick = () => { if (below) { alert(`Minimum amount for ${r.tenure} months is ${usd(r.min)}`); return; } selectTenure(r.tenure); };
+      card.innerHTML = `
+        <span class="radio"></span>
+        <span class="tmain">
+          <span class="ttenure">${r.tenure} months
+            ${zero ? '<span class="tbadge">0% interest</span>' : ''}
+            ${below ? `<span class="tbadge min">Min ${usd(r.min)}</span>` : ''}
+          </span>
+          <span class="tmeta">${(r.rate*100).toFixed(2)}% p.a.${zero ? '' : ` &middot; ${usd(c.totalInterest)} total interest`}</span>
+        </span>
+        <span class="tright">
+          <span class="tmonthly">${usd(c.monthly)}</span>
+          <span class="tmlabel">per month</span>
+        </span>`;
+      body.appendChild(card);
+    });
+    document.getElementById("r_principal").textContent = usd(amount);
+    if (selected) recompute();
+    else document.getElementById("r_total").textContent = usd(amount);
+  }
+
+  function selectTenure(t) {
+    const r = rates.find(x => x.tenure === t);
+    if (!r) return;
+    selected = r;
+    recompute();
+    renderTenure();
+    const hint = document.getElementById("calcHint");
+    if (hint) hint.classList.add("hidden");
+  }
+
+  function recompute() {
+    const amount = Number(document.getElementById("amount").value || 0);
+    const c = calc(amount, selected);
+    document.getElementById("selDisplay").value = selected.tenure + " months";
+    document.getElementById("r_principal").textContent = usd(amount);
+    document.getElementById("r_tenure").textContent = selected.tenure + " months";
+    document.getElementById("r_rate").textContent = (selected.rate*100).toFixed(2) + "% p.a.";
+    document.getElementById("r_interest").textContent = usd(c.totalInterest);
+    document.getElementById("r_monthly").textContent = usd(c.monthly);
+    document.getElementById("r_total").textContent = usd(c.totalPayable);
+  }
+
+  // ----- modal helpers -----
+  function closeAll() { document.querySelectorAll(".overlay").forEach(o => o.style.display = "none"); }
+  function show(id) { closeAll(); document.getElementById(id).style.display = "flex"; }
+  function openUcb() { show("m_choice"); }
+  function openDirect() { show("m_direct"); }
+  function openCalc() { renderTenure(); show("m_calc"); }
+  function pickExisting(name) { alert(name + " selected — continues with AIA's existing payment journey."); }
+
+  function openForm() {
+    if (!selected) {
+      const hint = document.getElementById("calcHint");
+      const list = document.getElementById("tenureBody");
+      if (hint) hint.classList.remove("hidden");
+      if (list) {
+        list.classList.remove("flash"); void list.offsetWidth; list.classList.add("flash");
+        list.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+    const amount = Number(document.getElementById("amount").value || 0);
+    const c = calc(amount, selected);
+    document.getElementById("f_tenure").value = selected.tenure + " months";
+    document.getElementById("f_period").value = selected.tenure + " monthly installments";
+    document.getElementById("f_amount").value = usd(amount);
+    document.getElementById("f_monthly").value = usd(c.monthly);
+    show("m_form");
+  }
+
+  async function submitForm(e) {
+    e.preventDefault();
+    formData = {
+      customerName: f_name.value, phone: f_phone.value, policyRef: f_policy.value, cardLast4: f_last4.value,
+      tenure: f_tenure.value, paymentPeriod: f_period.value, amount: f_amount.value, monthly: f_monthly.value,
+      submittedAt: new Date().toISOString(), source: "AIA installment page"
+    };
+    journey = "installment";
+
+    const status = document.getElementById("submitStatus");
+    const btn = document.getElementById("submitBtn");
+
+    // Demo mode — no endpoint configured
+    if (!UCB_SUBMIT_URL) {
+      openGateway("installment");
+      return;
+    }
+
+    // Live mode — post directly to the UCB-owned endpoint
+    btn.disabled = true;
+    status.className = "submit-status";
+    status.innerHTML = '<span class="spin"></span> Sending request to UCB…';
+    try {
+      await fetch(UCB_SUBMIT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=UTF-8" }, // simple type avoids CORS preflight
+        body: JSON.stringify(formData),
+        mode: "no-cors"
+      });
+      status.className = "submit-status ok";
+      status.textContent = "✓ Sent to UCB. Continuing to payment…";
+      setTimeout(() => { btn.disabled = false; openGateway("installment"); }, 700);
+    } catch (err) {
+      status.className = "submit-status err";
+      status.textContent = "Couldn't reach UCB. Check the connection and try again.";
+      btn.disabled = false;
+    }
+  }
+
+  function setChannelMode() {
+    const badge = document.getElementById("chMode");
+    const desc = document.getElementById("chDesc");
+    if (!badge) return;
+    if (UCB_SUBMIT_URL) {
+      badge.textContent = "Live → UCB";
+      badge.classList.add("live");
+      desc.innerHTML = "On submit, this form posts <strong>directly to UCB</strong> at the configured endpoint — AIA does not relay it.";
+    } else {
+      badge.textContent = "Demo mode";
+      badge.classList.remove("live");
+      desc.innerHTML = "When a UCB endpoint is configured, this form posts <strong>directly to UCB</strong> on submit (Power Automate / Microsoft Form / API) — AIA does not relay it. No endpoint is set, so it runs in demo mode.";
+    }
+  }
+
+  function openGateway(type) {
+    journey = type;
+    document.getElementById("g_direct").classList.toggle("hidden", type !== "direct");
+    document.getElementById("g_inst").classList.toggle("hidden", type === "direct");
+    show("m_gateway");
+  }
+
+  function completePayment() {
+    const ref = "TXN-UCB-" + Math.floor(100000 + Math.random() * 900000);
+    const box = document.getElementById("doneSummary");
+    if (journey === "direct") {
+      box.innerHTML = `<strong>Direct payment completed.</strong><br><br>
+        Type: Direct UCB Credit Card payment<br>Reference: ${ref}<br>Status: Paid<br><br>No installment request submitted.`;
+    } else {
+      box.innerHTML = `<strong>Installment payment completed — request submitted to UCB.</strong><br><br>
+        Name: ${formData.customerName}<br>Phone: ${formData.phone}<br>Policy ref: ${formData.policyRef}<br>
+        Transaction ref: ${ref}<br>Card last 4: ${formData.cardLast4}<br>Tenure: ${formData.tenure}<br>
+        Period: ${formData.paymentPeriod}<br>Amount: ${formData.amount}<br>Est. monthly: ${formData.monthly}<br><br>
+        <em>Prototype: in production this is sent to UCB only after payment success, via secure API / SharePoint / approved channel.</em>`;
+    }
+    show("m_done");
+  }
+
+  function usd(v) {
+    return "USD " + Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  window.addEventListener("click", e => { if (e.target.classList.contains("overlay")) closeAll(); });
+
+  // init
+  setChannelMode();
+  resetRates();
+</script>
+</body>
+</html>
