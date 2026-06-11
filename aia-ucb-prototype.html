@@ -754,9 +754,19 @@
   async function submitForm(e) {
     e.preventDefault();
     formData = {
-      customerName: f_name.value, phone: f_phone.value, policyRef: f_policy.value, cardLast4: f_last4.value,
-      tenure: f_tenure.value, paymentPeriod: f_period.value, amount: f_amount.value, monthly: f_monthly.value,
-      submittedAt: new Date().toISOString(), source: "AIA installment page"
+      submissionDateTime: new Date().toISOString(),
+      transactionRef: f_policy.value,
+      selectedTenure: f_tenure.value,
+      paymentPeriod: f_period.value,
+      transactionAmount: f_amount.value,
+      monthlyRepayment: f_monthly.value,
+      paymentStatus: "Pending gateway payment",
+      requestStatus: "Submitted to UCB",
+      customerName: f_name.value,
+      phone: f_phone.value,
+      policyRef: f_policy.value,
+      cardLast4: f_last4.value,
+      source: "AIA installment page"
     };
     journey = "installment";
 
@@ -776,9 +786,8 @@
     try {
       await fetch(UCB_SUBMIT_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=UTF-8" }, // simple type avoids CORS preflight
-        body: JSON.stringify(formData),
-        mode: "no-cors"
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
       });
       status.className = "submit-status ok";
       status.textContent = "✓ Sent to UCB. Continuing to payment…";
@@ -821,8 +830,8 @@
     } else {
       box.innerHTML = `<strong>Installment payment completed — request submitted to UCB.</strong><br><br>
         Name: ${formData.customerName}<br>Phone: ${formData.phone}<br>Policy ref: ${formData.policyRef}<br>
-        Transaction ref: ${ref}<br>Card last 4: ${formData.cardLast4}<br>Tenure: ${formData.tenure}<br>
-        Period: ${formData.paymentPeriod}<br>Amount: ${formData.amount}<br>Est. monthly: ${formData.monthly}<br><br>
+        Transaction ref: ${ref}<br>Card last 4: ${formData.cardLast4}<br>Tenure: ${formData.selectedTenure}<br>
+        Period: ${formData.paymentPeriod}<br>Amount: ${formData.transactionAmount}<br>Est. monthly: ${formData.monthlyRepayment}<br><br>
         <em>Prototype: in production this is sent to UCB only after payment success, via secure API / SharePoint / approved channel.</em>`;
     }
     show("m_done");
